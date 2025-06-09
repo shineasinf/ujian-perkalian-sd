@@ -2,45 +2,51 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ujian Perkalian SD</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 1rem; }
     .hidden { display: none; }
-    .question { margin-bottom: 15px; }
-    input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; }
-    button { padding: 10px 15px; margin-top: 15px; }
-    #timer { font-size: 18px; color: red; font-weight: bold; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    input[type="number"] { width: 60px; font-size: 1rem; margin-top: 5px; }
+    button { margin-top: 1rem; font-size: 1rem; padding: 0.5rem 1rem; }
+    #timer { font-weight: bold; font-size: 1.2rem; margin-bottom: 1rem; }
+    .question { margin-bottom: 1.5rem; }
+    #leaderboard table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    #leaderboard th, #leaderboard td { border: 1px solid #ddd; padding: 0.5rem; text-align: center; }
   </style>
 </head>
 <body>
 
-<div id="startSection">
-  <h2>Masukkan Nama Siswa</h2>
-  <input type="text" id="studentName" placeholder="Nama lengkap" />
-  <button onclick="startQuiz()">Mulai Ujian</button>
-</div>
+  <h1>Ujian Perkalian SD</h1>
 
-<div id="quizSection" class="hidden">
-  <div id="timer">Waktu: 10:00</div>
-  <form id="quizForm"></form>
-  <button onclick="submitQuiz()">Kumpulkan Jawaban</button>
-</div>
+  <div id="inputName">
+    <label for="name">Masukkan Nama Siswa:</label><br />
+    <input type="text" id="name" placeholder="Nama lengkap" autocomplete="off" /><br />
+    <button id="startBtn">Mulai Ujian</button>
+  </div>
 
-<div id="leaderboardSection" class="hidden">
-  <h2>Leaderboard Top 10</h2>
-  <table id="leaderboardTable">
-    <tr><th>Nama</th><th>Nilai</th></tr>
-  </table>
-</div>
+  <div id="quiz" class="hidden">
+    <div id="timer">Waktu tersisa: 10:00</div>
+    <form id="quizForm"></form>
+    <button id="nextBtn">Berikutnya</button>
+  </div>
 
-<!-- Firebase SDK -->
+  <div id="leaderboard" class="hidden">
+    <h2>Leaderboard Top 10</h2>
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Nama</th><th>Nilai</th></tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+    <button id="restartBtn">Ulangi Ujian</button>
+  </div>
+
 <script type="module">
-  // Firebase SDK & Config
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+  // Konfigurasi Firebase (ganti dengan konfigurasi kamu)
   const firebaseConfig = {
     apiKey: "AIzaSyArICF3dGJ24ymKct1DhqC3xl2CwZPjjQw",
     authDomain: "perkalian-sd.firebaseapp.com",
@@ -54,96 +60,195 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  let soal = [];
-  const totalQuestions = 50;
-  const duration = 600; // 10 menit
-  let timer = duration;
+  // --- Variabel global ---
+  let name = "";
+  let questions = [];
+  const totalQuestions = 500;
+  const questionsPerPage = 10;
+  let currentPage = 0;
+  let userAnswers = new Array(totalQuestions).fill(null);
+  let timerDuration = 10 * 60; // 10 menit dalam detik
   let timerInterval;
-  let studentName = "";
 
-  function startQuiz() {
-    studentName = document.getElementById("studentName").value.trim();
-    if (!studentName) return alert("Nama wajib diisi.");
-
-    generateQuestions();
-    document.getElementById("startSection").classList.add("hidden");
-    document.getElementById("quizSection").classList.remove("hidden");
-    renderQuestions();
-    timerInterval = setInterval(updateTimer, 1000);
-  }
-
+  // --- Generate soal perkalian 1x1 sampai 12x12 random ---
   function generateQuestions() {
-    soal = [];
+    const q = [];
     for (let i = 0; i < totalQuestions; i++) {
-      const a = Math.floor(Math.random() * 10) + 1;
-      const b = Math.floor(Math.random() * 10) + 1;
-      soal.push({ a, b, answer: "" });
+      const a = Math.floor(Math.random() * 12) + 1;
+      const b = Math.floor(Math.random() * 12) + 1;
+      q.push({ a, b, id: i });
     }
+    return q;
   }
 
-  function renderQuestions() {
+  // --- Render soal halaman tertentu ---
+  function renderPage(page) {
     const form = document.getElementById("quizForm");
     form.innerHTML = "";
-    soal.forEach((q, idx) => {
-      const div = document.createElement("div");
-      div.className = "question";
-      div.innerHTML = `
-        <label>${idx + 1}. ${q.a} × ${q.b}</label>
-        <input type="number" oninput="soal[${idx}].answer = this.value" />
+
+    const start = page * questionsPerPage;
+    const end = Math.min(start + questionsPerPage, totalQuestions);
+
+    for (let i = start; i < end; i++) {
+      const { a, b, id } = questions[i];
+      const qDiv = document.createElement("div");
+      qDiv.className = "question";
+      qDiv.innerHTML = `
+        <div>Soal ${i + 1}: ${a} × ${b} =</div>
+        <input type="number" min="0" id="answer-${id}" value="${userAnswers[id] !== null ? userAnswers[id] : ''}" autocomplete="off" />
       `;
-      form.appendChild(div);
-    });
-  }
+      form.appendChild(qDiv);
 
-  function updateTimer() {
-    const minutes = Math.floor(timer / 60);
-    const seconds = timer % 60;
-    document.getElementById("timer").textContent = `Waktu: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    if (timer <= 0) {
-      clearInterval(timerInterval);
-      alert("Waktu habis! Jawaban dikumpulkan otomatis.");
-      submitQuiz();
+      // Simpan jawaban otomatis ketika input berubah
+      const input = qDiv.querySelector("input");
+      input.addEventListener("input", (e) => {
+        const val = e.target.value;
+        userAnswers[id] = val === "" ? null : Number(val);
+      });
     }
-    timer--;
+
+    // Ubah tombol berikutnya jadi submit di halaman terakhir
+    const nextBtn = document.getElementById("nextBtn");
+    if (end === totalQuestions) {
+      nextBtn.textContent = "Selesai";
+    } else {
+      nextBtn.textContent = "Berikutnya";
+    }
   }
 
-  window.submitQuiz = async function () {
-    clearInterval(timerInterval);
+  // --- Hitung nilai ---
+  function calculateScore() {
     let score = 0;
-    soal.forEach(q => {
-      if (parseInt(q.answer) === q.a * q.b) score++;
-    });
+    for (let i = 0; i < totalQuestions; i++) {
+      if (userAnswers[i] === questions[i].a * questions[i].b) {
+        score++;
+      }
+    }
+    return score;
+  }
 
-    // Simpan ke Firebase
-    await push(ref(db, 'scores'), {
-      name: studentName,
-      score: score,
+  // --- Simpan hasil ke Firebase dan update leaderboard ---
+  async function saveScore(name, score) {
+    const scoresRef = ref(db, 'scores');
+    await push(scoresRef, {
+      name,
+      score,
       timestamp: Date.now()
     });
+  }
 
+  // --- Ambil top 10 leaderboard ---
+  async function loadLeaderboard() {
+    const scoresRef = ref(db, 'scores');
+    const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+    const snapshot = await get(scoresQuery);
+    const scoresArr = [];
+    snapshot.forEach(child => {
+      scoresArr.push(child.val());
+    });
+    // Urutkan descending
+    scoresArr.sort((a, b) => b.score - a.score);
+    return scoresArr;
+  }
+
+  // --- Tampilkan leaderboard ---
+  async function showLeaderboard() {
+    const leaderboardDiv = document.getElementById("leaderboard");
+    const leaderboardBody = document.getElementById("leaderboardBody");
+    leaderboardBody.innerHTML = "";
+
+    const topScores = await loadLeaderboard();
+
+    topScores.forEach((item, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${idx + 1}</td><td>${item.name}</td><td>${item.score}</td>`;
+      leaderboardBody.appendChild(tr);
+    });
+
+    leaderboardDiv.classList.remove("hidden");
+    document.getElementById("inputName").classList.add("hidden");
+    document.getElementById("quiz").classList.add("hidden");
+  }
+
+  // --- Timer ---
+  function startTimer() {
+    const timerDiv = document.getElementById("timer");
+    let timeLeft = timerDuration;
+    timerDiv.textContent = `Waktu tersisa: ${formatTime(timeLeft)}`;
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerDiv.textContent = `Waktu tersisa: ${formatTime(timeLeft)}`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        finishQuiz();
+      }
+    }, 1000);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+  }
+
+  // --- Mulai ujian ---
+  function startQuiz() {
+    const inputName = document.getElementById("name").value.trim();
+    if (!inputName) {
+      alert("Nama wajib diisi.");
+      return;
+    }
+    name = inputName;
+    questions = generateQuestions();
+    currentPage = 0;
+    userAnswers = new Array(totalQuestions).fill(null);
+
+    document.getElementById("inputName").classList.add("hidden");
+    document.getElementById("quiz").classList.remove("hidden");
+    document.getElementById("leaderboard").classList.add("hidden");
+
+    renderPage(currentPage);
+    startTimer();
+  }
+
+  // --- Lanjut halaman berikutnya atau selesai ---
+  function nextPage() {
+    // kalau halaman terakhir, finish quiz
+    if ((currentPage + 1) * questionsPerPage >= totalQuestions) {
+      finishQuiz();
+      return;
+    }
+    currentPage++;
+    renderPage(currentPage);
+  }
+
+  // --- Selesai ujian ---
+  async function finishQuiz() {
+    clearInterval(timerInterval);
+    const score = calculateScore();
+    await saveScore(name, score);
+    alert(`Waktu habis / ujian selesai.\nNilai Anda: ${score} dari ${totalQuestions}`);
     showLeaderboard();
   }
 
-  async function showLeaderboard() {
-    document.getElementById("quizSection").classList.add("hidden");
-    document.getElementById("leaderboardSection").classList.remove("hidden");
-
-    const leaderboardRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
-    const snapshot = await get(leaderboardRef);
-    const data = [];
-
-    snapshot.forEach(child => data.push(child.val()));
-    data.sort((a, b) => b.score - a.score);
-
-    const table = document.getElementById("leaderboardTable");
-    table.innerHTML = "<tr><th>Nama</th><th>Nilai</th></tr>";
-    data.forEach(item => {
-      const row = table.insertRow();
-      row.insertCell(0).textContent = item.name;
-      row.insertCell(1).textContent = item.score;
-    });
+  // --- Reset dan ulangi ujian ---
+  function restartQuiz() {
+    document.getElementById("name").value = "";
+    document.getElementById("inputName").classList.remove("hidden");
+    document.getElementById("quiz").classList.add("hidden");
+    document.getElementById("leaderboard").classList.add("hidden");
+    clearInterval(timerInterval);
   }
+
+  // --- Event listeners ---
+  document.getElementById("startBtn").addEventListener("click", startQuiz);
+  document.getElementById("nextBtn").addEventListener("click", nextPage);
+  document.getElementById("restartBtn").addEventListener("click", restartQuiz);
+
+  // --- Tampilkan leaderboard di awal halaman (opsional) ---
+  showLeaderboard();
 </script>
+
 </body>
 </html>
-
