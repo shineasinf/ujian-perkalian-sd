@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ujian Perkalian SD</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    .hidden { display: none; }
+    .question { margin-bottom: 15px; }
+    input[type="text"], input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; }
+    button { padding: 10px 15px; margin-top: 15px; }
+    #timer { font-size: 18px; color: red; font-weight: bold; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+
+<div id="startSection">
+  <h2>Masukkan Nama Siswa</h2>
+  <input type="text" id="studentName" placeholder="Nama lengkap" />
+  <button onclick="startQuiz()">Mulai Ujian</button>
+</div>
+
+<div id="quizSection" class="hidden">
+  <div id="timer">Waktu: 10:00</div>
+  <form id="quizForm"></form>
+  <button onclick="submitQuiz()">Kumpulkan Jawaban</button>
+</div>
+
+<div id="leaderboardSection" class="hidden">
+  <h2>Leaderboard Top 10</h2>
+  <table id="leaderboardTable">
+    <tr><th>Nama</th><th>Nilai</th></tr>
+  </table>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  // Firebase SDK & Config
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArICF3dGJ24ymKct1DhqC3xl2CwZPjjQw",
+    authDomain: "perkalian-sd.firebaseapp.com",
+    databaseURL: "https://perkalian-sd-default-rtdb.firebaseio.com",
+    projectId: "perkalian-sd",
+    storageBucket: "perkalian-sd.firebasestorage.app",
+    messagingSenderId: "710370060069",
+    appId: "1:710370060069:web:2a60081b0a3da9d64edccc"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let soal = [];
+  const totalQuestions = 50;
+  const duration = 600; // 10 menit
+  let timer = duration;
+  let timerInterval;
+  let studentName = "";
+
+  function startQuiz() {
+    studentName = document.getElementById("studentName").value.trim();
+    if (!studentName) return alert("Nama wajib diisi.");
+
+    generateQuestions();
+    document.getElementById("startSection").classList.add("hidden");
+    document.getElementById("quizSection").classList.remove("hidden");
+    renderQuestions();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function generateQuestions() {
+    soal = [];
+    for (let i = 0; i < totalQuestions; i++) {
+      const a = Math.floor(Math.random() * 10) + 1;
+      const b = Math.floor(Math.random() * 10) + 1;
+      soal.push({ a, b, answer: "" });
+    }
+  }
+
+  function renderQuestions() {
+    const form = document.getElementById("quizForm");
+    form.innerHTML = "";
+    soal.forEach((q, idx) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `
+        <label>${idx + 1}. ${q.a} × ${q.b}</label>
+        <input type="number" oninput="soal[${idx}].answer = this.value" />
+      `;
+      form.appendChild(div);
+    });
+  }
+
+  function updateTimer() {
+    const minutes = Math.floor(timer / 60);
+    const seconds = timer % 60;
+    document.getElementById("timer").textContent = `Waktu: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    if (timer <= 0) {
+      clearInterval(timerInterval);
+      alert("Waktu habis! Jawaban dikumpulkan otomatis.");
+      submitQuiz();
+    }
+    timer--;
+  }
+
+  window.submitQuiz = async function () {
+    clearInterval(timerInterval);
+    let score = 0;
+    soal.forEach(q => {
+      if (parseInt(q.answer) === q.a * q.b) score++;
+    });
+
+    // Simpan ke Firebase
+    await push(ref(db, 'scores'), {
+      name: studentName,
+      score: score,
+      timestamp: Date.now()
+    });
+
+    showLeaderboard();
+  }
+
+  async function showLeaderboard() {
+    document.getElementById("quizSection").classList.add("hidden");
+    document.getElementById("leaderboardSection").classList.remove("hidden");
+
+    const leaderboardRef = query(ref(db, 'scores'), orderByChild('score'), limitToLast(10));
+    const snapshot = await get(leaderboardRef);
+    const data = [];
+
+    snapshot.forEach(child => data.push(child.val()));
+    data.sort((a, b) => b.score - a.score);
+
+    const table = document.getElementById("leaderboardTable");
+    table.innerHTML = "<tr><th>Nama</th><th>Nilai</th></tr>";
+    data.forEach(item => {
+      const row = table.insertRow();
+      row.insertCell(0).textContent = item.name;
+      row.insertCell(1).textContent = item.score;
+    });
+  }
+</script>
+</body>
+</html>
+
