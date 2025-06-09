@@ -25,7 +25,7 @@
     let questions = [];
     let answers = [];
     let timer;
-    let timerDuration = 1 * 60;
+    let timerDuration = 1 * 60; // 1 menit
 
     function generateQuestions() {
       const q = [];
@@ -47,9 +47,11 @@
       studentName = document.getElementById("nameInput").value.trim();
       if (!studentName) return alert("Masukkan nama terlebih dahulu.");
       document.getElementById("intro").classList.add("hidden");
+      document.getElementById("leaderboard").classList.add("hidden");
       document.getElementById("exam").classList.remove("hidden");
       questions = generateQuestions();
       answers = new Array(500).fill("");
+      currentPage = 0;
       showPage();
       startTimer();
     }
@@ -80,8 +82,16 @@
 
     function nextPage() {
       saveAnswers();
-      if (currentPage < Math.floor(questions.length / questionsPerPage)) {
+      if (currentPage < Math.floor((questions.length - 1) / questionsPerPage)) {
         currentPage++;
+        showPage();
+      }
+    }
+
+    function prevPage() {
+      saveAnswers();
+      if (currentPage > 0) {
+        currentPage--;
         showPage();
       }
     }
@@ -102,8 +112,7 @@
         score: score,
         timestamp: Date.now()
       }).then(() => {
-        document.getElementById("exam").classList.add("hidden");
-        showLeaderboard();
+        location.reload();
       });
     }
 
@@ -122,42 +131,50 @@
     }
 
     async function loadLeaderboard() {
-  const scoresRef = ref(db, 'scores');
-  const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
-  const snapshot = await get(scoresQuery);
-
-  const scoresArr = [];
-  if (snapshot.exists()) {
-    snapshot.forEach(child => {
-      scoresArr.push(child.val());
-    });
-  }
-  scoresArr.sort((a, b) => b.score - a.score);
-  return scoresArr;
-}
-
+      const scoresRef = ref(db, 'scores');
+      const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+      const snapshot = await get(scoresQuery);
+      const scoresArr = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(child => {
+          scoresArr.push(child.val());
+        });
+        // Urutkan descending berdasarkan score
+        scoresArr.sort((a, b) => b.score - a.score);
+      }
+      return scoresArr;
+    }
 
     async function showLeaderboard() {
       const leaderboardDiv = document.getElementById("leaderboard");
       const leaderboardBody = document.getElementById("leaderboardBody");
       leaderboardBody.innerHTML = "";
       const scores = await loadLeaderboard();
-      scores.forEach((entry, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${entry.name}</td>
-          <td>${entry.score}</td>
-        `;
-        leaderboardBody.appendChild(row);
-      });
+      if (scores.length === 0) {
+        leaderboardBody.innerHTML = "<tr><td colspan='3'>Belum ada skor.</td></tr>";
+      } else {
+        scores.forEach((entry, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${entry.name}</td>
+            <td>${entry.score}</td>
+          `;
+          leaderboardBody.appendChild(row);
+        });
+      }
       leaderboardDiv.classList.remove("hidden");
     }
 
     window.startExam = startExam;
     window.nextPage = nextPage;
+    window.prevPage = prevPage;
     window.finishExam = finishExam;
+    window.onload = showLeaderboard;
   </script>
+  <style>
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
   <div id="intro">
@@ -169,6 +186,7 @@
   <div id="exam" class="hidden">
     <h3>Waktu Tersisa: <span id="timer"></span></h3>
     <div id="questions"></div>
+    <button onclick="prevPage()">Sebelumnya</button>
     <button onclick="nextPage()">Berikutnya</button>
     <button onclick="finishExam()">Selesai</button>
   </div>
