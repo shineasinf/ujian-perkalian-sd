@@ -28,20 +28,54 @@
     let timerDuration = 1 * 60; // 1 menit
 
     function generateQuestions() {
-      const q = [];
-      for (let i = 1; i <= 500; i++) {
-        let a, b;
-        if (i <= 300) {
-          a = Math.floor(Math.random() * 10);
-          b = Math.floor(Math.random() * 10);
-        } else {
-          a = Math.floor(Math.random() * 90 + 10);
-          b = Math.floor(Math.random() * 90 + 10);
-        }
-        q.push({ a, b });
+  const q = [];
+  for (let i = 1; i <= 500; i++) {
+    let a, b;
+    if (i <= 100) {
+      // Soal 1-100: 1 digit (1-9) x 1 digit (1-9)
+      a = Math.floor(Math.random() * 10);
+      b = Math.floor(Math.random() * 10);
+    } else if (i <= 200) {
+      // Soal 101-200: 1 digit (6-9) x 1 digit (6-9)
+      a = Math.floor(Math.random() * 4) + 6;
+      b = Math.floor(Math.random() * 4) + 6;
+    } else if (i <= 300) {
+      // Soal 201-300: 2 digit (10-12) x 1 digit (1-9) atau sebaliknya
+      if (Math.random() < 0.5) {
+        a = Math.floor(Math.random() * 3) + 10; // 10-12
+        b = Math.floor(Math.random() * 9) + 1;  // 1-9
+      } else {
+        a = Math.floor(Math.random() * 9) + 1;
+        b = Math.floor(Math.random() * 3) + 10;
       }
-      return q;
+    } else if (i <= 400) {
+      // Soal 301-400: 2 digit (10-30) x 2 digit (10-20) atau sebaliknya
+      if (Math.random() < 0.5) {
+        a = Math.floor(Math.random() * 21) + 10; // 10-30
+        b = Math.floor(Math.random() * 11) + 10; // 10-20
+      } else {
+        a = Math.floor(Math.random() * 11) + 10;
+        b = Math.floor(Math.random() * 21) + 10;
+      }
+    } else if (i <= 450) {
+      // Soal 401-450: 2 digit (10-30) x 2 digit (10-50) atau sebaliknya
+      if (Math.random() < 0.5) {
+        a = Math.floor(Math.random() * 21) + 10; // 10-30
+        b = Math.floor(Math.random() * 41) + 10; // 10-50
+      } else {
+        a = Math.floor(Math.random() * 41) + 10;
+        b = Math.floor(Math.random() * 21) + 10;
+      }
+    } else {
+      // Soal 451-500: 2 digit (50-99) x 2 digit (50-99)
+      a = Math.floor(Math.random() * 50) + 50;
+      b = Math.floor(Math.random() * 50) + 50;
     }
+    q.push({ a, b });
+  }
+  return q;
+}
+
 
     function startExam() {
       studentName = document.getElementById("nameInput").value.trim();
