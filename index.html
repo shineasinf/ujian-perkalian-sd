@@ -122,16 +122,20 @@
     }
 
     async function loadLeaderboard() {
-      const scoresRef = ref(db, 'scores');
-      const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
-      const snapshot = await get(scoresQuery);
-      const scoresArr = [];
-      snapshot.forEach(child => {
-        scoresArr.push(child.val());
-      });
-      scoresArr.sort((a, b) => b.score - a.score);
-      return scoresArr;
-    }
+  const scoresRef = ref(db, 'scores');
+  const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+  const snapshot = await get(scoresQuery);
+
+  const scoresArr = [];
+  if (snapshot.exists()) {
+    snapshot.forEach(child => {
+      scoresArr.push(child.val());
+    });
+  }
+  scoresArr.sort((a, b) => b.score - a.score);
+  return scoresArr;
+}
+
 
     async function showLeaderboard() {
       const leaderboardDiv = document.getElementById("leaderboard");
