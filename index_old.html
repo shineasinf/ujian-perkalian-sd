@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ujian Perkalian SD</title>
+  <!-- Tambahkan Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -82,6 +85,10 @@
       background-color: #f1f1f1;
     }
 
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
     @media screen and (max-width: 600px) {
       input, select, button {
         font-size: 14px;
@@ -90,6 +97,7 @@
 
       th, td {
         font-size: 14px;
+        padding: 8px 5px;
       }
     }
 
@@ -110,6 +118,22 @@
       padding: 10px;
       color: #666;
     }
+
+    .leaderboard-container {
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .medal {
+      font-size: 1.2em;
+    }
+
+    .gold { color: gold; }
+    .silver { color: silver; }
+    .bronze { color: #cd7f32; }
   </style>
 </head>
 <body>
@@ -121,13 +145,13 @@
       
       <select id="kelas" required>
         <option value="" disabled selected>Pilih Kelas</option>
-        <option value="7">N/A</option>
         <option value="1">Kelas 1</option>
         <option value="2">Kelas 2</option>
         <option value="3">Kelas 3</option>
         <option value="4">Kelas 4</option>
         <option value="5">Kelas 5</option>
         <option value="6">Kelas 6</option>
+        <option value="N/A">N/A (Tidak Bersekolah)</option>
       </select>
 
       <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
@@ -144,38 +168,53 @@
     </form>
 
     <div id="leaderboard">
-      <h2>🏆 Leaderboard Top 10</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Peringkat</th>
-            <th>Nama</th>
-            <th>Skor</th>
-            <th>Sekolah</th>
-            <th>Kota</th>
-            <th>Usia</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          <tr>
-            <td>🥇</td>
-            <td>Audy cute</td>
-            <td>88</td>
-            <td>SD Contoh</td>
-            <td>Kab. Kudus</td>
-            <td>9</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2>🏆 Leaderboard Top 50</h2>
+      <div class="leaderboard-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Peringkat</th>
+              <th>Nama</th>
+              <th>Skor</th>
+              <th>Sekolah</th>
+              <th>Kota</th>
+              <th>Usia</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <tr>
+              <td colspan="6" class="loading">Memuat leaderboard...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <script>
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyArICF3dGJ24ymKct1DhqC3xl2CwZPjjQw",
+      authDomain: "perkalian-sd.firebaseapp.com",
+      databaseURL: "https://perkalian-sd-default-rtdb.firebaseio.com",
+      projectId: "perkalian-sd",
+      storageBucket: "perkalian-sd.firebasestorage.app",
+      messagingSenderId: "710370060069",
+      appId: "1:710370060069:web:2a60081b0a3da9d64edccc"
+    };
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     const kotaSelect = document.getElementById('kota');
     const cariKota = document.getElementById('cari-kota');
     const submitBtn = document.getElementById('submit-btn');
+    const sekolahInput = document.getElementById('sekolah');
+    const kelasSelect = document.getElementById('kelas');
+    const leaderboardBody = document.getElementById('leaderboard-body');
     
-    let kotaData = {}; // Ini akan diisi dengan data dari JSON
+    let kotaData = {};
 
     // Fungsi untuk memuat data kota dari file JSON
     async function loadKotaData() {
@@ -193,6 +232,76 @@
         console.error('Error:', error);
         kotaSelect.innerHTML = '<option value="" disabled selected>Gagal memuat data kota</option>';
       }
+    }
+
+    // Fungsi untuk memuat leaderboard dari Firebase
+    function loadLeaderboard() {
+      const scoresRef = database.ref('scores');
+      
+      scoresRef.orderByChild('score').limitToLast(50).on('value', (snapshot) => {
+        const scoresData = snapshot.val();
+        const leaderboardArray = [];
+        
+        // Konversi data ke array
+        for (const key in scoresData) {
+          if (scoresData.hasOwnProperty(key)) {
+            leaderboardArray.push({
+              id: key,
+              ...scoresData[key]
+            });
+          }
+        }
+        
+        // Urutkan berdasarkan skor tertinggi
+        leaderboardArray.sort((a, b) => b.score - a.score);
+        
+        // Hitung usia dari tanggal lahir
+        const currentYear = new Date().getFullYear();
+        leaderboardArray.forEach(item => {
+          if (item.birthdate) {
+            const birthYear = new Date(item.birthdate).getFullYear();
+            item.age = currentYear - birthYear;
+          } else {
+            item.age = '-';
+          }
+        });
+        
+        renderLeaderboard(leaderboardArray);
+      }, (error) => {
+        console.error('Error loading leaderboard:', error);
+        leaderboardBody.innerHTML = '<tr><td colspan="6">Gagal memuat leaderboard</td></tr>';
+      });
+    }
+
+    // Fungsi untuk menampilkan leaderboard
+    function renderLeaderboard(data) {
+      if (data.length === 0) {
+        leaderboardBody.innerHTML = '<tr><td colspan="6">Belum ada data</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      
+      data.forEach((item, index) => {
+        // Tentukan ikon medali untuk 3 besar
+        let rankIcon = '';
+        if (index === 0) rankIcon = '<span class="medal gold">🥇</span>';
+        else if (index === 1) rankIcon = '<span class="medal silver">🥈</span>';
+        else if (index === 2) rankIcon = '<span class="medal bronze">🥉</span>';
+        
+        html += `
+          <tr>
+            <td>${rankIcon} ${index + 1}</td>
+            <td>${item.name || '-'}</td>
+            <td>${item.score || '0'}</td>
+            <td>${item.school || '-'}</td>
+            <td>${item.city || '-'}</td>
+            <td>${item.age || '-'}</td>
+          </tr>
+        `;
+      });
+      
+      leaderboardBody.innerHTML = html;
     }
 
     function populateKotaOptions(filter = '') {
@@ -233,13 +342,32 @@
       }
     }
 
+    function handleKelasChange() {
+      if (kelasSelect.value === 'N/A') {
+        sekolahInput.placeholder = 'Nama Sekolah (opsional)';
+        sekolahInput.required = false;
+        sekolahInput.value = 'Tidak bersekolah';
+      } else {
+        sekolahInput.placeholder = 'Nama Sekolah';
+        sekolahInput.required = true;
+        if (sekolahInput.value === 'Tidak bersekolah') {
+          sekolahInput.value = '';
+        }
+      }
+    }
+
     cariKota.addEventListener('input', () => {
       const searchTerm = cariKota.value.trim();
       populateKotaOptions(searchTerm);
     });
 
+    kelasSelect.addEventListener('change', handleKelasChange);
+
     // Memuat data saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', loadKotaData);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadKotaData();
+      loadLeaderboard();
+    });
   </script>
 </body>
 </html>
