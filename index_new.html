@@ -19,7 +19,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let studentName = "";
     let studentMeta = {};
     let currentPage = 0;
     const questionsPerPage = 10;
@@ -72,12 +71,12 @@
     }
 
     function startExam() {
-      studentName = document.getElementById("nameInput").value.trim();
+      const name = document.getElementById("nameInput").value.trim();
       const studentClass = document.getElementById("classInput").value.trim();
       const birthDate = document.getElementById("birthInput").value;
       const city = document.getElementById("cityInput").value.trim();
 
-      if (studentName.length < 6) {
+      if (name.length < 6) {
         alert("Nama harus minimal 6 huruf.");
         return;
       }
@@ -86,12 +85,7 @@
         return;
       }
 
-      studentMeta = {
-        name: studentName,
-        class: studentClass,
-        birthdate: birthDate,
-        city: city
-      };
+      studentMeta = { name, class: studentClass, birthdate: birthDate, city };
 
       document.getElementById("intro").classList.add("hidden");
       document.getElementById("leaderboard").classList.add("hidden");
@@ -200,24 +194,38 @@
       return scoresArr;
     }
 
+    function calculateAge(birthdateStr) {
+      const birthDate = new Date(birthdateStr);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
     async function showLeaderboard() {
       const leaderboardDiv = document.getElementById("leaderboard");
       const leaderboardBody = document.getElementById("leaderboardBody");
       leaderboardBody.innerHTML = "";
       const scores = await loadLeaderboard();
       if (scores.length === 0) {
-        leaderboardBody.innerHTML = "<tr><td colspan='3'>Belum ada skor.</td></tr>";
+        leaderboardBody.innerHTML = "<tr><td colspan='5'>Belum ada skor.</td></tr>";
       } else {
         scores.forEach((entry, index) => {
           let rankIcon = index + 1;
           if (index === 0) rankIcon = "🥇";
           else if (index === 1) rankIcon = "🥈";
           else if (index === 2) rankIcon = "🥉";
+          const age = calculateAge(entry.birthdate);
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${rankIcon}</td>
             <td>${entry.name}</td>
             <td>${entry.score}</td>
+            <td>${entry.city}</td>
+            <td>${age}</td>
           `;
           leaderboardBody.appendChild(row);
         });
@@ -236,12 +244,7 @@
     .hidden { display: none; }
     body { font-family: Arial, sans-serif; }
 
-    h2 {
-      font-size: 24px;
-      text-transform: uppercase;
-      text-align: center;
-    }
-
+    h2 { font-size: 24px; text-align: center; }
     input, select, button {
       display: block;
       margin: 10px auto;
@@ -251,38 +254,25 @@
       max-width: 400px;
       box-sizing: border-box;
     }
-
     #questions input {
       width: 100px;
       font-size: 18px;
       text-align: center;
     }
-
-    button {
-      cursor: pointer;
-    }
-
-    button.red {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-    }
+    button { cursor: pointer; }
+    button.red { background-color: #e74c3c; color: white; border: none; }
 
     table {
       border-collapse: collapse;
       margin: auto;
       font-size: 18px;
-      width: 90%;
-      max-width: 600px;
+      width: 95%;
+      max-width: 800px;
     }
 
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
-      text-align: center;
-    }
-
-    h3 {
       text-align: center;
     }
   </style>
@@ -322,6 +312,8 @@
           <th>Peringkat</th>
           <th>Nama</th>
           <th>Skor</th>
+          <th>Kota</th>
+          <th>Usia</th>
         </tr>
       </thead>
       <tbody id="leaderboardBody"></tbody>
