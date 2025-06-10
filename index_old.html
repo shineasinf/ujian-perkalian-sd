@@ -118,7 +118,7 @@
         <option value="6">Kelas 6</option>
       </select>
 
-      <input type="date" id="tanggal-lahir" required placeholder="Tanggal Lahir (dd/mm/yyyy)" />
+      <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
 
       <input type="text" id="sekolah" placeholder="Nama Sekolah" required />
 
