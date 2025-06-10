@@ -42,15 +42,26 @@
     }
 
     button {
-      background-color: #007bff;
       color: white;
       font-weight: bold;
       border: none;
       cursor: pointer;
     }
 
-    button:hover {
+    #submit-btn, .nav-btn {
+      background-color: #007bff;
+    }
+
+    #submit-btn:hover, .nav-btn:hover {
       background-color: #0056b3;
+    }
+
+    #finish-btn {
+      background-color: #dc3545;
+    }
+
+    #finish-btn:hover {
+      background-color: #c82333;
     }
 
     button:disabled {
@@ -134,6 +145,118 @@
     .gold { color: gold; }
     .silver { color: silver; }
     .bronze { color: #cd7f32; }
+
+    /* Exam Styles */
+    #exam-container {
+      margin-top: 20px;
+    }
+
+    #timer {
+      font-size: 1.5em;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+      color: #dc3545;
+    }
+
+    .question-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    @media screen and (max-width: 600px) {
+      .question-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .question {
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background-color: #fff;
+    }
+
+    .question-text {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+
+    .question-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .nav-btn {
+      width: 30%;
+    }
+
+    #finish-btn {
+      width: 35%;
+    }
+
+    .page-info {
+      text-align: center;
+      margin: 10px 0;
+      font-weight: bold;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 400px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .modal-btn-yes {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .modal-btn-no {
+      background-color: #6c757d;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -154,7 +277,7 @@
         <option value="N/A">N/A (Tidak Bersekolah)</option>
       </select>
 
-      <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
+      <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}" required>
 
       <input type="text" id="sekolah" placeholder="Nama Sekolah" required />
 
@@ -166,6 +289,21 @@
 
       <button type="submit" id="submit-btn" disabled>Mulai Ujian</button>
     </form>
+
+    <div id="exam-container" class="hidden">
+      <div id="timer">10:00</div>
+      <div class="page-info">Halaman <span id="current-page">1</span> dari 50</div>
+      
+      <div class="question-container" id="questions-grid">
+        <!-- Soal akan diisi oleh JavaScript -->
+      </div>
+      
+      <div class="navigation">
+        <button class="nav-btn" id="prev-btn" disabled>Sebelumnya</button>
+        <button id="finish-btn">Selesai</button>
+        <button class="nav-btn" id="next-btn">Berikutnya</button>
+      </div>
+    </div>
 
     <div id="leaderboard">
       <h2>🏆 Leaderboard Top 50</h2>
@@ -191,6 +329,17 @@
     </div>
   </div>
 
+  <!-- Modal Konfirmasi -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content">
+      <p>Apakah anda menyerah? (ya/tidak)</p>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-yes" id="confirm-yes">Ya</button>
+        <button class="modal-btn modal-btn-no" id="confirm-no">Tidak</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Konfigurasi Firebase
     const firebaseConfig = {
@@ -207,14 +356,36 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // Elemen DOM
+    const form = document.getElementById('form');
+    const examContainer = document.getElementById('exam-container');
+    const leaderboard = document.getElementById('leaderboard');
     const kotaSelect = document.getElementById('kota');
     const cariKota = document.getElementById('cari-kota');
     const submitBtn = document.getElementById('submit-btn');
     const sekolahInput = document.getElementById('sekolah');
     const kelasSelect = document.getElementById('kelas');
     const leaderboardBody = document.getElementById('leaderboard-body');
+    const timerDisplay = document.getElementById('timer');
+    const questionsGrid = document.getElementById('questions-grid');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const finishBtn = document.getElementById('finish-btn');
+    const currentPageDisplay = document.getElementById('current-page');
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmYesBtn = document.getElementById('confirm-yes');
+    const confirmNoBtn = document.getElementById('confirm-no');
     
+    // Variabel state
     let kotaData = {};
+    let examData = {
+      questions: [],
+      answers: Array(500).fill(''),
+      currentPage: 1,
+      startTime: null,
+      timerInterval: null,
+      timeLeft: 600 // 10 menit dalam detik
+    };
 
     // Fungsi untuk memuat data kota dari file JSON
     async function loadKotaData() {
@@ -304,6 +475,7 @@
       leaderboardBody.innerHTML = html;
     }
 
+    // Fungsi untuk mengisi opsi kota
     function populateKotaOptions(filter = '') {
       kotaSelect.innerHTML = '';
       
@@ -342,6 +514,7 @@
       }
     }
 
+    // Fungsi untuk menangani perubahan pilihan kelas
     function handleKelasChange() {
       if (kelasSelect.value === 'N/A') {
         sekolahInput.placeholder = 'Nama Sekolah (opsional)';
@@ -356,12 +529,285 @@
       }
     }
 
+    // Fungsi untuk memulai ujian
+    function startExam() {
+      // Sembunyikan form dan leaderboard
+      form.classList.add('hidden');
+      leaderboard.classList.add('hidden');
+      
+      // Tampilkan exam container
+      examContainer.classList.remove('hidden');
+      
+      // Generate soal
+      generateQuestions();
+      
+      // Tampilkan halaman pertama
+      showPage(1);
+      
+      // Mulai timer
+      startTimer();
+    }
+
+    // Fungsi untuk generate soal
+    function generateQuestions() {
+      examData.questions = [];
+      
+      // Soal 1-100: 1 digit x 1 digit (1-9)
+      for (let i = 0; i < 100; i++) {
+        const a = Math.floor(Math.random() * 9) + 1;
+        const b = Math.floor(Math.random() * 9) + 1;
+        examData.questions.push({
+          num1: a,
+          num2: b,
+          value: 1
+        });
+      }
+      
+      // Soal 101-200: 1 digit x 1 digit (6-9)
+      for (let i = 0; i < 100; i++) {
+        const a = Math.floor(Math.random() * 4) + 6;
+        const b = Math.floor(Math.random() * 4) + 6;
+        examData.questions.push({
+          num1: a,
+          num2: b,
+          value: 1
+        });
+      }
+      
+      // Soal 201-300: 2 digit (10-12) x 1 digit (1-9) atau sebaliknya
+      for (let i = 0; i < 100; i++) {
+        const a = Math.floor(Math.random() * 3) + 10;
+        const b = Math.floor(Math.random() * 9) + 1;
+        // Acak posisi angka
+        if (Math.random() > 0.5) {
+          examData.questions.push({
+            num1: a,
+            num2: b,
+            value: 1
+          });
+        } else {
+          examData.questions.push({
+            num1: b,
+            num2: a,
+            value: 1
+          });
+        }
+      }
+      
+      // Soal 301-400: 2 digit (10-30) x 2 digit (10-20) atau sebaliknya
+      for (let i = 0; i < 100; i++) {
+        const a = Math.floor(Math.random() * 21) + 10;
+        const b = Math.floor(Math.random() * 11) + 10;
+        // Acak posisi angka
+        if (Math.random() > 0.5) {
+          examData.questions.push({
+            num1: a,
+            num2: b,
+            value: 3.5
+          });
+        } else {
+          examData.questions.push({
+            num1: b,
+            num2: a,
+            value: 3.5
+          });
+        }
+      }
+      
+      // Soal 401-450: 2 digit (10-30) x 2 digit (10-50) atau sebaliknya
+      for (let i = 0; i < 50; i++) {
+        const a = Math.floor(Math.random() * 21) + 10;
+        const b = Math.floor(Math.random() * 41) + 10;
+        // Acak posisi angka
+        if (Math.random() > 0.5) {
+          examData.questions.push({
+            num1: a,
+            num2: b,
+            value: 3.5
+          });
+        } else {
+          examData.questions.push({
+            num1: b,
+            num2: a,
+            value: 3.5
+          });
+        }
+      }
+      
+      // Soal 451-500: 2 digit (50-99) x 2 digit (50-99)
+      for (let i = 0; i < 50; i++) {
+        const a = Math.floor(Math.random() * 50) + 50;
+        const b = Math.floor(Math.random() * 50) + 50;
+        examData.questions.push({
+          num1: a,
+          num2: b,
+          value: 3.5
+        });
+      }
+    }
+
+    // Fungsi untuk menampilkan halaman soal
+    function showPage(page) {
+      examData.currentPage = page;
+      currentPageDisplay.textContent = page;
+      
+      // Update tombol navigasi
+      prevBtn.disabled = page === 1;
+      nextBtn.disabled = page === 50;
+      
+      // Kosongkan grid
+      questionsGrid.innerHTML = '';
+      
+      // Hitung indeks awal dan akhir soal untuk halaman ini
+      const startIdx = (page - 1) * 10;
+      const endIdx = startIdx + 10;
+      
+      // Tambahkan soal ke grid
+      for (let i = startIdx; i < endIdx; i++) {
+        const question = examData.questions[i];
+        const questionNum = i + 1;
+        
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.innerHTML = `
+          <div class="question-text">${questionNum}. ${question.num1} × ${question.num2} =</div>
+          <input type="number" class="question-input" data-index="${i}" 
+                 value="${examData.answers[i]}" 
+                 placeholder="Jawaban" />
+        `;
+        
+        questionsGrid.appendChild(questionDiv);
+      }
+      
+      // Tambahkan event listener untuk input jawaban
+      document.querySelectorAll('.question-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const index = parseInt(e.target.dataset.index);
+          examData.answers[index] = e.target.value;
+        });
+      });
+    }
+
+    // Fungsi untuk memulai timer
+    function startTimer() {
+      examData.startTime = new Date().getTime();
+      examData.timeLeft = 600; // 10 menit dalam detik
+      updateTimerDisplay();
+      
+      examData.timerInterval = setInterval(() => {
+        examData.timeLeft--;
+        updateTimerDisplay();
+        
+        if (examData.timeLeft <= 0) {
+          clearInterval(examData.timerInterval);
+          finishExam();
+        }
+      }, 1000);
+    }
+
+    // Fungsi untuk update tampilan timer
+    function updateTimerDisplay() {
+      const minutes = Math.floor(examData.timeLeft / 60);
+      const seconds = examData.timeLeft % 60;
+      timerDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    // Fungsi untuk menyelesaikan ujian
+    function finishExam() {
+      clearInterval(examData.timerInterval);
+      
+      // Hitung skor
+      let totalScore = 0;
+      for (let i = 0; i < examData.questions.length; i++) {
+        const answer = parseInt(examData.answers[i]);
+        const correctAnswer = examData.questions[i].num1 * examData.questions[i].num2;
+        
+        if (answer === correctAnswer) {
+          totalScore += examData.questions[i].value;
+        }
+      }
+      
+      // Bulatkan skor ke 2 desimal
+      totalScore = Math.round(totalScore * 100) / 100;
+      
+      // Dapatkan data user dari form
+      const userData = {
+        name: document.getElementById('nama').value,
+        kelas: document.getElementById('kelas').value,
+        birthdate: document.getElementById('tanggal-lahir').value,
+        school: document.getElementById('sekolah').value,
+        city: document.getElementById('kota').value,
+        score: totalScore,
+        timestamp: new Date().getTime()
+      };
+      
+      // Simpan ke Firebase
+      saveScore(userData);
+      
+      // Refresh halaman
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+
+    // Fungsi untuk menyimpan skor ke Firebase
+    function saveScore(userData) {
+      const scoresRef = database.ref('scores');
+      scoresRef.push(userData)
+        .then(() => {
+          console.log('Score saved successfully');
+        })
+        .catch((error) => {
+          console.error('Error saving score:', error);
+        });
+    }
+
+    // Fungsi untuk menampilkan modal konfirmasi
+    function showConfirmModal() {
+      confirmModal.style.display = 'block';
+    }
+
+    // Fungsi untuk menyembunyikan modal konfirmasi
+    function hideConfirmModal() {
+      confirmModal.style.display = 'none';
+    }
+
+    // Event Listeners
     cariKota.addEventListener('input', () => {
       const searchTerm = cariKota.value.trim();
       populateKotaOptions(searchTerm);
     });
 
     kelasSelect.addEventListener('change', handleKelasChange);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      startExam();
+    });
+
+    prevBtn.addEventListener('click', () => {
+      showPage(examData.currentPage - 1);
+    });
+
+    nextBtn.addEventListener('click', () => {
+      showPage(examData.currentPage + 1);
+    });
+
+    finishBtn.addEventListener('click', showConfirmModal);
+
+    confirmYesBtn.addEventListener('click', () => {
+      hideConfirmModal();
+      finishExam();
+    });
+
+    confirmNoBtn.addEventListener('click', hideConfirmModal);
+
+    // Tutup modal ketika klik di luar modal
+    window.addEventListener('click', (e) => {
+      if (e.target === confirmModal) {
+        hideConfirmModal();
+      }
+    });
 
     // Memuat data saat halaman dimuat
     document.addEventListener('DOMContentLoaded', () => {
