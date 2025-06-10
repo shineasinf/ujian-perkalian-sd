@@ -274,7 +274,7 @@
         <option value="4">Kelas 4</option>
         <option value="5">Kelas 5</option>
         <option value="6">Kelas 6</option>
-        <option value="N/A">N/A (Tidak Bersekolah)</option>
+        <option value="N/A">N/A (bukan anak SD/MI/Sederajat)</option>
       </select>
 
       <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}" required>
@@ -519,11 +519,11 @@
       if (kelasSelect.value === 'N/A') {
         sekolahInput.placeholder = 'Nama Sekolah (opsional)';
         sekolahInput.required = false;
-        sekolahInput.value = 'Tidak bersekolah';
+        sekolahInput.value = 'Bukan anak SD/MI/Sederajat';
       } else {
         sekolahInput.placeholder = 'Nama Sekolah';
         sekolahInput.required = true;
-        if (sekolahInput.value === 'Tidak bersekolah') {
+        if (sekolahInput.value === 'Bukan anak SD/MI/Sederajat') {
           sekolahInput.value = '';
         }
       }
