@@ -1,148 +1,342 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ujian Perkalian SD</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    input, select, button { padding: 8px; margin: 5px; font-size: 1em; }
-    #exam, #result { display: none; }
-  </style>
-</head>
-<body>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, set, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  <div id="intro">
-    <h1>Ujian Perkalian SD</h1>
-    <label for="nameInput">Nama:</label><br>
-    <input type="text" id="nameInput" placeholder="Masukkan nama"><br>
-
-    <label for="classInput">Kelas:</label><br>
-    <input type="text" id="classInput" placeholder="Misal: 4B"><br>
-
-    <label for="cityInput">Kota Asal:</label><br>
-    <select id="cityInput">
-      <option value="">-- Pilih Kota Asal --</option>
-    </select><br>
-
-    <button onclick="startExam()">Mulai Ujian</button>
-  </div>
-
-  <div id="exam">
-    <h2 id="question"></h2>
-    <input type="number" id="answerInput" placeholder="Jawaban Anda">
-    <button onclick="submitAnswer()">Kirim Jawaban</button>
-  </div>
-
-  <div id="result">
-    <h2>Hasil Ujian</h2>
-    <p id="scoreText"></p>
-    <button onclick="location.reload()">Ulangi</button>
-  </div>
-
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyArICF3dGJ24ymKct1DhqC3xl2CwZPjjQw",
+      authDomain: "perkalian-sd.firebaseapp.com",
+      databaseURL: "https://perkalian-sd-default-rtdb.firebaseio.com",
+      projectId: "perkalian-sd",
+      storageBucket: "perkalian-sd.appspot.com",
+      messagingSenderId: "710370060069",
+      appId: "1:710370060069:web:2a60081b0a3da9d64edccc"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    let currentQuestion = 0;
-    let correctAnswers = 0;
-    let totalQuestions = 10;
-    let a, b;
-    const studentMeta = {};
+    let studentMeta = {};
+    let currentPage = 0;
+    const questionsPerPage = 10;
+    let questions = [];
+    let answers = [];
+    let timer;
+    let timerDuration = 10 * 60;
+
+    function generateQuestions() {
+      const q = [];
+      for (let i = 1; i <= 500; i++) {
+        let a, b;
+        if (i <= 100) {
+          a = Math.floor(Math.random() * 10);
+          b = Math.floor(Math.random() * 10);
+        } else if (i <= 200) {
+          a = Math.floor(Math.random() * 4) + 6;
+          b = Math.floor(Math.random() * 4) + 6;
+        } else if (i <= 300) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 3) + 10;
+            b = Math.floor(Math.random() * 9) + 1;
+          } else {
+            a = Math.floor(Math.random() * 9) + 1;
+            b = Math.floor(Math.random() * 3) + 10;
+          }
+        } else if (i <= 400) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 21) + 10;
+            b = Math.floor(Math.random() * 11) + 10;
+          } else {
+            a = Math.floor(Math.random() * 11) + 10;
+            b = Math.floor(Math.random() * 21) + 10;
+          }
+        } else if (i <= 450) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 21) + 10;
+            b = Math.floor(Math.random() * 41) + 10;
+          } else {
+            a = Math.floor(Math.random() * 41) + 10;
+            b = Math.floor(Math.random() * 21) + 10;
+          }
+        } else {
+          a = Math.floor(Math.random() * 50) + 50;
+          b = Math.floor(Math.random() * 50) + 50;
+        }
+        q.push({ a, b });
+      }
+      return q;
+    }
 
     function startExam() {
-      const name = document.getElementById('nameInput').value.trim();
-      const className = document.getElementById('classInput').value.trim();
-      const city = document.getElementById('cityInput').value.trim();
+      const name = document.getElementById("nameInput").value.trim();
+      const studentClass = document.getElementById("classInput").value.trim();
+      const birthDate = document.getElementById("birthInput").value;
+      const school = document.getElementById("schoolInput").value.trim();
+      const city = document.getElementById("cityInput").value;
 
-      if (!name || !className || !city) {
-        alert("Mohon isi nama, kelas, dan pilih kota asal.");
+      if (name.length < 6) {
+        alert("Nama harus minimal 6 huruf.");
+        return;
+      }
+      if (!studentClass || !birthDate || !school || !city) {
+        alert("Mohon lengkapi semua data siswa.");
         return;
       }
 
-      studentMeta.name = name;
-      studentMeta.class = className;
-      studentMeta.city = city;
-      studentMeta.startTime = new Date().toISOString();
+      studentMeta = { name, class: studentClass, birthdate: birthDate, school, city };
 
-      document.getElementById('intro').style.display = 'none';
-      document.getElementById('exam').style.display = 'block';
+      document.getElementById("intro").classList.add("hidden");
+      document.getElementById("leaderboard").classList.add("hidden");
+      document.getElementById("exam").classList.remove("hidden");
 
-      nextQuestion();
+      questions = generateQuestions();
+      answers = new Array(500).fill("");
+      currentPage = 0;
+      showPage();
+      startTimer();
     }
 
-    function nextQuestion() {
-      a = Math.floor(Math.random() * 10) + 1;
-      b = Math.floor(Math.random() * 10) + 1;
-      document.getElementById('question').textContent = `Berapa ${a} x ${b}?`;
-      document.getElementById('answerInput').value = '';
-      document.getElementById('answerInput').focus();
-    }
-
-    function submitAnswer() {
-      const answer = parseInt(document.getElementById('answerInput').value);
-      if (!isNaN(answer) && answer === a * b) {
-        correctAnswers++;
+    function showPage() {
+      const container = document.getElementById("questions");
+      container.innerHTML = "";
+      const start = currentPage * questionsPerPage;
+      const end = start + questionsPerPage;
+      for (let i = start; i < end && i < questions.length; i++) {
+        const q = questions[i];
+        const div = document.createElement("div");
+        div.style.textAlign = "center";
+        div.style.fontSize = "18px";
+        div.innerHTML = `
+          <label><b>Soal ${i + 1}:</b> ${q.a} x ${q.b}</label><br>
+          <input type="number" data-index="${i}" value="${answers[i] || ""}" /><br><br>
+        `;
+        container.appendChild(div);
       }
+    }
 
-      currentQuestion++;
-      if (currentQuestion < totalQuestions) {
-        nextQuestion();
-      } else {
-        finishExam();
+    function saveAnswers() {
+      const inputs = document.querySelectorAll("#questions input");
+      inputs.forEach(input => {
+        const index = parseInt(input.dataset.index);
+        answers[index] = input.value.trim();
+      });
+    }
+
+    function nextPage() {
+      saveAnswers();
+      if (currentPage < Math.floor((questions.length - 1) / questionsPerPage)) {
+        currentPage++;
+        showPage();
+      }
+    }
+
+    function prevPage() {
+      saveAnswers();
+      if (currentPage > 0) {
+        currentPage--;
+        showPage();
       }
     }
 
     function finishExam() {
-      document.getElementById('exam').style.display = 'none';
-      document.getElementById('result').style.display = 'block';
-      document.getElementById('scoreText').textContent =
-        `${studentMeta.name}, skor kamu adalah ${correctAnswers} dari ${totalQuestions}`;
+      if (!confirm("Apakah Anda yakin akan mengumpulkan jawaban?")) return;
 
-      const result = {
-        name: studentMeta.name,
-        class: studentMeta.class,
-        city: studentMeta.city,
-        score: correctAnswers,
-        total: totalQuestions,
-        time: new Date().toISOString()
-      };
+      clearInterval(timer);
+      saveAnswers();
+      let score = 0;
+      for (let i = 0; i < 500; i++) {
+        const correct = questions[i].a * questions[i].b;
+        const studentAns = parseInt(answers[i]);
+        if (studentAns === correct) {
+          score += (i < 300) ? 1 : 3.5;
+        }
+      }
 
-      database.ref('results').push(result);
+      push(ref(db, 'scores'), {
+        ...studentMeta,
+        score: score,
+        timestamp: Date.now()
+      }).then(() => {
+        location.reload();
+      });
     }
 
-    // Load kota dari file JSON
-    async function loadCityOptions() {
-      try {
-        const res = await fetch('nama_kota.json');
-        const data = await res.json();
-        const select = document.getElementById('cityInput');
-        data.forEach(entry => {
-          entry.kota.forEach(kota => {
-            const opt = document.createElement('option');
-            opt.value = kota;
-            opt.textContent = `${kota} — ${entry.provinsi}`;
-            select.appendChild(opt);
-          });
+    function startTimer() {
+      const display = document.getElementById("timer");
+      let time = timerDuration;
+      timer = setInterval(() => {
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (--time < 0) {
+          clearInterval(timer);
+          finishExam();
+        }
+      }, 1000);
+    }
+
+    async function loadLeaderboard() {
+      const scoresRef = ref(db, 'scores');
+      const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+      const snapshot = await get(scoresQuery);
+      const scoresArr = [];
+      if (snapshot.exists()) {
+        snapshot.forEach(child => {
+          scoresArr.push(child.val());
         });
-      } catch (err) {
-        console.error("Gagal memuat nama_kota.json", err);
+        scoresArr.sort((a, b) => b.score - a.score);
+      }
+      return scoresArr;
+    }
+
+    function calculateAge(birthdateStr) {
+      const birthDate = new Date(birthdateStr);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    async function showLeaderboard() {
+      const leaderboardDiv = document.getElementById("leaderboard");
+      const leaderboardBody = document.getElementById("leaderboardBody");
+      leaderboardBody.innerHTML = "";
+      const scores = await loadLeaderboard();
+      if (scores.length === 0) {
+        leaderboardBody.innerHTML = "<tr><td colspan='6'>Belum ada skor.</td></tr>";
+      } else {
+        scores.forEach((entry, index) => {
+          let rankIcon = index + 1;
+          if (index === 0) rankIcon = "🥇";
+          else if (index === 1) rankIcon = "🥈";
+          else if (index === 2) rankIcon = "🥉";
+          const age = calculateAge(entry.birthdate);
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${rankIcon}</td>
+            <td>${entry.name}</td>
+            <td>${entry.score}</td>
+            <td>${entry.school}</td>
+            <td>${entry.city}</td>
+            <td>${age}</td>
+          `;
+          leaderboardBody.appendChild(row);
+        });
+      }
+      leaderboardDiv.classList.remove("hidden");
+    }
+
+    async function loadCities() {
+      const citySelect = document.getElementById("cityInput");
+      try {
+        const response = await fetch("kota-provinsi.json");
+        const data = await response.json();
+        data.forEach(entry => {
+          const opt = document.createElement("option");
+          opt.value = entry.city;
+          opt.textContent = `${entry.city}, ${entry.province}`;
+          citySelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.error("Gagal memuat daftar kota:", e);
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadCityOptions);
+    window.startExam = startExam;
+    window.nextPage = nextPage;
+    window.prevPage = prevPage;
+    window.finishExam = finishExam;
+    window.onload = () => {
+      loadCities();
+      showLeaderboard();
+    };
   </script>
+
+  <style>
+    .hidden { display: none; }
+    body { font-family: Arial, sans-serif; }
+    h2 { font-size: 24px; text-align: center; }
+    input, select, button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+    #questions input {
+      width: 100px;
+      font-size: 18px;
+      text-align: center;
+    }
+    button { cursor: pointer; }
+    button.red { background-color: #e74c3c; color: white; border: none; }
+    table {
+      border-collapse: collapse;
+      margin: auto;
+      font-size: 18px;
+      width: 95%;
+      max-width: 800px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="intro">
+    <h2>Ujian Perkalian SD</h2>
+    <input id="nameInput" placeholder="Nama siswa (minimal 6 huruf)" />
+    <select id="classInput">
+      <option value="">Pilih Kelas</option>
+      <option value="-">-</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </select>
+    <input type="text" id="birthInput" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
+    <input id="schoolInput" placeholder="Nama Sekolah" />
+    <select id="cityInput">
+      <option value="">Pilih Kota</option>
+    </select>
+    <button onclick="startExam()">Mulai Ujian</button>
+  </div>
+
+  <div id="exam" class="hidden">
+    <h3>Waktu Tersisa: <span id="timer"></span></h3>
+    <div id="questions"></div>
+    <button onclick="prevPage()">Sebelumnya</button>
+    <button onclick="nextPage()">Berikutnya</button>
+    <button class="red" onclick="finishExam()">Selesai</button>
+  </div>
+
+  <div id="leaderboard" class="hidden">
+    <h2>🏆 Leaderboard Top 10</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Peringkat</th>
+          <th>Nama</th>
+          <th>Skor</th>
+          <th>Sekolah</th>
+          <th>Kota</th>
+          <th>Usia</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+    </table>
+  </div>
 </body>
 </html>
