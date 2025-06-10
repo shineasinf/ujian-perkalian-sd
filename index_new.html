@@ -182,7 +182,7 @@
 
     async function loadLeaderboard() {
       const scoresRef = ref(db, 'scores');
-      const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+      const scoresQuery = query(scoresRef, orderByChild('score'), limitToLast(50));
       const snapshot = await get(scoresQuery);
       const scoresArr = [];
       if (snapshot.exists()) {
@@ -305,7 +305,7 @@
   </div>
 
   <div id="leaderboard" class="hidden">
-    <h2>🏆 Leaderboard Top 10</h2>
+    <h2>🏆 Leaderboard Top 50</h2>
     <table>
       <thead>
         <tr>
