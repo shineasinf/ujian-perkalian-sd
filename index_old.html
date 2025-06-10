@@ -26,6 +26,7 @@
     let answers = [];
     let timer;
     let timerDuration = 10 * 60;
+    let fullCityList = [];
 
     function generateQuestions() {
       const q = [];
@@ -237,21 +238,44 @@
       try {
         const response = await fetch("kota-provinsi.json");
         const data = await response.json();
-        data.forEach(entry => {
-          const opt = document.createElement("option");
-          opt.value = entry.city;
-          opt.textContent = `${entry.city}, ${entry.province}`;
-          citySelect.appendChild(opt);
-        });
+        fullCityList = data;
+        filterCities(); // tampilkan awal
       } catch (e) {
         console.error("Gagal memuat daftar kota:", e);
       }
+    }
+
+    function filterCities() {
+      const input = document.getElementById("citySearch").value.toLowerCase();
+      const citySelect = document.getElementById("cityInput");
+
+      citySelect.innerHTML = "";
+      const defaultOpt = document.createElement("option");
+      defaultOpt.value = "";
+      defaultOpt.textContent = "Pilih Kota";
+      citySelect.appendChild(defaultOpt);
+
+      fullCityList.forEach(entry => {
+        const matching = entry.kota.filter(k => k.toLowerCase().includes(input));
+        if (matching.length > 0) {
+          const group = document.createElement("optgroup");
+          group.label = entry.provinsi;
+          matching.forEach(kota => {
+            const opt = document.createElement("option");
+            opt.value = kota;
+            opt.textContent = kota;
+            group.appendChild(opt);
+          });
+          citySelect.appendChild(group);
+        }
+      });
     }
 
     window.startExam = startExam;
     window.nextPage = nextPage;
     window.prevPage = prevPage;
     window.finishExam = finishExam;
+    window.filterCities = filterCities;
     window.onload = () => {
       loadCities();
       showLeaderboard();
@@ -270,6 +294,9 @@
       width: 80%;
       max-width: 400px;
       box-sizing: border-box;
+    }
+    #citySearch {
+      margin-bottom: 0;
     }
     #questions input {
       width: 100px;
@@ -308,6 +335,7 @@
     </select>
     <input type="text" id="birthInput" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
     <input id="schoolInput" placeholder="Nama Sekolah" />
+    <input id="citySearch" placeholder="Cari kota..." oninput="filterCities()" />
     <select id="cityInput">
       <option value="">Pilih Kota</option>
     </select>
