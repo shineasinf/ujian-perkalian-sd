@@ -112,6 +112,86 @@
       "Kab. Kerinci"
     ],
 
+  "Sumatera Selatan":[
+      "Kota Palembang",
+      "Kota Pagar Alam",
+      "Kota Lubuk Linggau",
+      "Kota Prabumulih",
+      "Kab. Musi Rawas Utara",
+      "Kab. Penukal Abab Lematang Ilir",
+      "Kab. Empat Lawang",
+      "Kab. Ogan Ilir ",
+      "Kab. Ogan Komering Ulu Selatan ",
+      "Kab. Ogan Komering Ulu Timur ",
+      "Kab. Banyuasin",
+      "Kab. Musi Banyuasin",
+      "Kab. Musi Rawas",
+      "Kab. Lahat",
+      "Kab. Muara Enim",
+      "Kab. Ogan Komering Ilir",
+      "Kab. Ogan Komering Ulu"
+    ],
+
+  "Bengkulu":[
+      "Kota Bengkulu",
+      "Kab. Bengkulu Tengah",
+      "Kab. Kepahiang ",
+      "Kab. Lebong",
+      "Kab. Muko Muko",
+      "Kab. Seluma",
+      "Kab. Kaur",
+      "Kab. Bengkulu Utara",
+      "Kab. Rejang Lebong",
+      "Kab. Bengkulu Selatan"
+    ],
+
+  "Lampung":[      
+      "Kota Bandar Lampung",
+      "Kota Metro",
+      "Kab. Pesisir Barat",
+      "Kab. Tulangbawang Barat",
+      "Kab. Mesuji",
+      "Kab. Pringsewu",
+      "Kab. Pesawaran",
+      "Kab. Way Kanan",
+      "Kab. Lampung Timur",
+      "Kab. Tanggamus",
+      "Kab. Tulang Bawang",
+      "Kab. Lampung Barat",
+      "Kab. Lampung Utara",
+      "Kab. Lampung Tengah",
+      "Kab. Lampung Selatan"
+    ],
+
+  "Kepulauan Bangka Belitung":[
+      "Kota Pangkal Pinang",
+      "Kab. Belitung Timur",
+      "Kab. Bangka Barat",
+      "Kab. Bangka Tengah",
+      "Kab. Bangka Selatan",
+      "Kab. Belitung",
+      "Kab. Bangka"
+    ],
+  
+  "Kepulauan Riau":[
+      "Kota Batam",
+      "Kota Tanjung Pinang",
+      "Kab. Kepulauan Anambas",
+      "Kab. Lingga ",
+      "Kab. Natuna",
+      "Kab. Karimun",
+      "Kab. Bintan"
+    ],
+
+  "DKI Jakarta":[
+      "Kota Jakarta Timur",
+      "Kota Jakarta Selatan",
+      "Kota Jakarta Barat",
+      "Kota Jakarta Utara",
+      "Kota Jakarta Pusat",
+      "Kab. Kepulauan Seribu"
+    ],
+  
   "Jawa Tengah":[
       "Kota Semarang",
       "Kota Tegal",
@@ -148,14 +228,5 @@
       "Kab. Purbalingga",
       "Kab. Banyumas",
       "Kab. Cilacap"
-  ],
-
-  "DKI Jakarta":[
-      "Kota Jakarta Timur",
-      "Kota Jakarta Selatan",
-      "Kota Jakarta Barat",
-      "Kota Jakarta Utara",
-      "Kota Jakarta Pusat",
-      "Kab. Kepulauan Seribu"
-    ]
+  ]
 }
