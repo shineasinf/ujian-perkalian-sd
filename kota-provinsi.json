@@ -148,5 +148,14 @@
       "Kab. Purbalingga",
       "Kab. Banyumas",
       "Kab. Cilacap"
-  ]
+  ],
+
+  "DKI Jakarta":[
+      "Kota Jakarta Timur",
+      "Kota Jakarta Selatan",
+      "Kota Jakarta Barat",
+      "Kota Jakarta Utara",
+      "Kota Jakarta Pusat",
+      "Kab. Kepulauan Seribu"
+    ]
 }
