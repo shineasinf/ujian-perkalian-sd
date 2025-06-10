@@ -292,7 +292,7 @@
       <option value="6">6</option>
     </select>
     <small>Masukkan tanggal lahir Anda</small>
-    <input type="date" id="birthInput" placeholder="Tanggal Lahir" />
+    <input type="text" id="birthInput" placeholder="Tanggal Lahir dd/mm/yyyy" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
     <input id="cityInput" placeholder="Nama sekolah" />
     <button onclick="startExam()">Mulai Ujian</button>
   </div>
