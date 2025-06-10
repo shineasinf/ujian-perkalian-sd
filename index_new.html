@@ -93,9 +93,8 @@
         const div = document.createElement("div");
         div.innerHTML = `
           <label><b>Soal ${i + 1}:</b> ${q.a} x ${q.b}</label><br>
-          <input type="number" data-index="${i}" value="${answers[i] || ""}" style="font-size: 18px;" /><br><br>
+          <input type="number" data-index="${i}" value="${answers[i] || ""}" /><br><br>
         `;
-        div.style.fontSize = "18px";
         container.appendChild(div);
       }
     }
@@ -181,9 +180,13 @@
         leaderboardBody.innerHTML = "<tr><td colspan='3'>Belum ada skor.</td></tr>";
       } else {
         scores.forEach((entry, index) => {
+          let rankIcon = index + 1;
+          if (index === 0) rankIcon = "🥇";
+          else if (index === 1) rankIcon = "🥈";
+          else if (index === 2) rankIcon = "🥉";
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${index + 1}</td>
+            <td>${rankIcon}</td>
             <td>${entry.name}</td>
             <td>${entry.score}</td>
           `;
@@ -201,17 +204,20 @@
   </script>
   <style>
     .hidden { display: none; }
-    body { font-family: Arial, sans-serif; }
-    input, button {
+    table {
+      border-collapse: collapse;
+      margin: auto;
       font-size: 18px;
-      padding: 6px 12px;
+      width: 90%;
+      max-width: 600px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
     }
     h2, h3 {
-      text-transform: uppercase;
-      font-size: 24px;
-    }
-    table {
-      font-size: 18px;
+      text-align: center;
     }
   </style>
 </head>
@@ -231,8 +237,8 @@
   </div>
 
   <div id="leaderboard" class="hidden">
-    <h2>Leaderboard</h2>
-    <table border="1">
+    <h2>🏆 Leaderboard Top 10</h2>
+    <table>
       <thead>
         <tr>
           <th>Peringkat</th>
