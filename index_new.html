@@ -20,6 +20,7 @@
     const db = getDatabase(app);
 
     let studentName = "";
+    let studentMeta = {};
     let currentPage = 0;
     const questionsPerPage = 10;
     let questions = [];
@@ -72,10 +73,30 @@
 
     function startExam() {
       studentName = document.getElementById("nameInput").value.trim();
-      if (!studentName) return alert("Masukkan nama terlebih dahulu.");
+      const studentClass = document.getElementById("classInput").value.trim();
+      const birthDate = document.getElementById("birthInput").value;
+      const city = document.getElementById("cityInput").value.trim();
+
+      if (studentName.length < 6) {
+        alert("Nama harus minimal 6 huruf.");
+        return;
+      }
+      if (!studentClass || !birthDate || !city) {
+        alert("Mohon lengkapi semua data siswa.");
+        return;
+      }
+
+      studentMeta = {
+        name: studentName,
+        class: studentClass,
+        birthdate: birthDate,
+        city: city
+      };
+
       document.getElementById("intro").classList.add("hidden");
       document.getElementById("leaderboard").classList.add("hidden");
       document.getElementById("exam").classList.remove("hidden");
+
       questions = generateQuestions();
       answers = new Array(500).fill("");
       currentPage = 0;
@@ -95,7 +116,7 @@
         div.style.fontSize = "18px";
         div.innerHTML = `
           <label><b>Soal ${i + 1}:</b> ${q.a} x ${q.b}</label><br>
-          <input type="number" data-index="${i}" value="${answers[i] || ""}" style="font-size: 18px; padding: 8px; width: 100px;" /><br><br>
+          <input type="number" data-index="${i}" value="${answers[i] || ""}" /><br><br>
         `;
         container.appendChild(div);
       }
@@ -127,6 +148,7 @@
 
     function finishExam() {
       if (!confirm("Apakah Anda yakin akan mengumpulkan jawaban?")) return;
+
       clearInterval(timer);
       saveAnswers();
       let score = 0;
@@ -137,8 +159,12 @@
           score += (i < 300) ? 1 : 3.5;
         }
       }
+
       push(ref(db, 'scores'), {
-        name: studentName,
+        name: studentMeta.name,
+        class: studentMeta.class,
+        birthdate: studentMeta.birthdate,
+        city: studentMeta.city,
         score: score,
         timestamp: Date.now()
       }).then(() => {
@@ -205,8 +231,43 @@
     window.finishExam = finishExam;
     window.onload = showLeaderboard;
   </script>
+
   <style>
     .hidden { display: none; }
+    body { font-family: Arial, sans-serif; }
+
+    h2 {
+      font-size: 24px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    input, select, button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      font-size: 16px;
+      width: 80%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+
+    #questions input {
+      width: 100px;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button.red {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+    }
+
     table {
       border-collapse: collapse;
       margin: auto;
@@ -214,49 +275,34 @@
       width: 90%;
       max-width: 600px;
     }
+
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: center;
     }
-    h2 {
+
+    h3 {
       text-align: center;
-      text-transform: uppercase;
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    #intro {
-      text-align: center;
-    }
-    #nameInput {
-      font-size: 18px;
-      padding: 10px;
-      width: 250px;
-      margin-bottom: 10px;
-    }
-    #intro button {
-      font-size: 18px;
-      padding: 10px 20px;
-      margin-top: 10px;
-    }
-    #exam {
-      text-align: center;
-    }
-    #exam button {
-      font-size: 16px;
-      padding: 10px 20px;
-      margin: 10px;
-    }
-    #exam button:last-child {
-      background-color: red;
-      color: white;
     }
   </style>
 </head>
 <body>
   <div id="intro">
     <h2>Ujian Perkalian SD</h2>
-    <input id="nameInput" placeholder="Masukkan nama siswa" /><br>
+    <input id="nameInput" placeholder="Nama siswa (minimal 6 huruf)" />
+    <select id="classInput">
+      <option value="">Pilih Kelas</option>
+      <option value="-">-</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </select>
+    <input type="date" id="birthInput" placeholder="Tanggal Lahir" />
+    <input id="cityInput" placeholder="Kota asal sekolah" />
     <button onclick="startExam()">Mulai Ujian</button>
   </div>
 
@@ -265,7 +311,7 @@
     <div id="questions"></div>
     <button onclick="prevPage()">Sebelumnya</button>
     <button onclick="nextPage()">Berikutnya</button>
-    <button onclick="finishExam()">Selesai</button>
+    <button class="red" onclick="finishExam()">Selesai</button>
   </div>
 
   <div id="leaderboard" class="hidden">
