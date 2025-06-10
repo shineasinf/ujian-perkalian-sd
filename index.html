@@ -257,6 +257,28 @@
       background-color: #6c757d;
       color: white;
     }
+  
+  /* Tambahkan style untuk bottom bar */
+    .bottom-bar {
+      background-color: #f8f9fa;
+      padding: 15px 0;
+      text-align: center;
+      border-top: 1px solid #e9ecef;
+      margin-top: 30px;
+      font-size: 14px;
+      color: #6c757d;
+    }
+
+    .bottom-bar a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .bottom-bar a:hover {
+      text-decoration: underline;
+    }
+  /* Tambahkan style untuk bottom bar */
+    
   </style>
 </head>
 <body>
@@ -274,7 +296,7 @@
         <option value="4">Kelas 4</option>
         <option value="5">Kelas 5</option>
         <option value="6">Kelas 6</option>
-        <option value="N/A">N/A (bukan anak SD/MI/Sederajat)</option>
+        <option value="N/A">N/A (non SD/MI/Sederajat)</option>
       </select>
 
       <input type="text" id="tanggal-lahir" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}" required>
@@ -340,6 +362,13 @@
     </div>
   </div>
 
+  <div class="bottom-bar">
+    &copy; 2025 @shineasinfinity 
+    <a href="#" target="_blank">Terms of Service</a> | 
+    <a href="#" target="_blank">Privacy Policy</a>
+  </div>
+
+  
   <script>
     // Konfigurasi Firebase
     const firebaseConfig = {
@@ -519,11 +548,11 @@
       if (kelasSelect.value === 'N/A') {
         sekolahInput.placeholder = 'Nama Sekolah (opsional)';
         sekolahInput.required = false;
-        sekolahInput.value = 'Bukan anak SD/MI/Sederajat';
+        sekolahInput.value = 'Non SD/MI/Sederajat';
       } else {
         sekolahInput.placeholder = 'Nama Sekolah';
         sekolahInput.required = true;
-        if (sekolahInput.value === 'Bukan anak SD/MI/Sederajat') {
+        if (sekolahInput.value === 'Non SD/MI/Sederajat') {
           sekolahInput.value = '';
         }
       }
