@@ -25,57 +25,50 @@
     let questions = [];
     let answers = [];
     let timer;
-    let timerDuration = 10 * 60; // 1 menit
+    let timerDuration = 10 * 60;
 
     function generateQuestions() {
-  const q = [];
-  for (let i = 1; i <= 500; i++) {
-    let a, b;
-    if (i <= 100) {
-      // Soal 1-100: 1 digit (1-9) x 1 digit (1-9)
-      a = Math.floor(Math.random() * 10);
-      b = Math.floor(Math.random() * 10);
-    } else if (i <= 200) {
-      // Soal 101-200: 1 digit (6-9) x 1 digit (6-9)
-      a = Math.floor(Math.random() * 4) + 6;
-      b = Math.floor(Math.random() * 4) + 6;
-    } else if (i <= 300) {
-      // Soal 201-300: 2 digit (10-12) x 1 digit (1-9) atau sebaliknya
-      if (Math.random() < 0.5) {
-        a = Math.floor(Math.random() * 3) + 10; // 10-12
-        b = Math.floor(Math.random() * 9) + 1;  // 1-9
-      } else {
-        a = Math.floor(Math.random() * 9) + 1;
-        b = Math.floor(Math.random() * 3) + 10;
+      const q = [];
+      for (let i = 1; i <= 500; i++) {
+        let a, b;
+        if (i <= 100) {
+          a = Math.floor(Math.random() * 10);
+          b = Math.floor(Math.random() * 10);
+        } else if (i <= 200) {
+          a = Math.floor(Math.random() * 4) + 6;
+          b = Math.floor(Math.random() * 4) + 6;
+        } else if (i <= 300) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 3) + 10;
+            b = Math.floor(Math.random() * 9) + 1;
+          } else {
+            a = Math.floor(Math.random() * 9) + 1;
+            b = Math.floor(Math.random() * 3) + 10;
+          }
+        } else if (i <= 400) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 21) + 10;
+            b = Math.floor(Math.random() * 11) + 10;
+          } else {
+            a = Math.floor(Math.random() * 11) + 10;
+            b = Math.floor(Math.random() * 21) + 10;
+          }
+        } else if (i <= 450) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(Math.random() * 21) + 10;
+            b = Math.floor(Math.random() * 41) + 10;
+          } else {
+            a = Math.floor(Math.random() * 41) + 10;
+            b = Math.floor(Math.random() * 21) + 10;
+          }
+        } else {
+          a = Math.floor(Math.random() * 50) + 50;
+          b = Math.floor(Math.random() * 50) + 50;
+        }
+        q.push({ a, b });
       }
-    } else if (i <= 400) {
-      // Soal 301-400: 2 digit (10-30) x 2 digit (10-20) atau sebaliknya
-      if (Math.random() < 0.5) {
-        a = Math.floor(Math.random() * 21) + 10; // 10-30
-        b = Math.floor(Math.random() * 11) + 10; // 10-20
-      } else {
-        a = Math.floor(Math.random() * 11) + 10;
-        b = Math.floor(Math.random() * 21) + 10;
-      }
-    } else if (i <= 450) {
-      // Soal 401-450: 2 digit (10-30) x 2 digit (10-50) atau sebaliknya
-      if (Math.random() < 0.5) {
-        a = Math.floor(Math.random() * 21) + 10; // 10-30
-        b = Math.floor(Math.random() * 41) + 10; // 10-50
-      } else {
-        a = Math.floor(Math.random() * 41) + 10;
-        b = Math.floor(Math.random() * 21) + 10;
-      }
-    } else {
-      // Soal 451-500: 2 digit (50-99) x 2 digit (50-99)
-      a = Math.floor(Math.random() * 50) + 50;
-      b = Math.floor(Math.random() * 50) + 50;
+      return q;
     }
-    q.push({ a, b });
-  }
-  return q;
-}
-
 
     function startExam() {
       studentName = document.getElementById("nameInput").value.trim();
@@ -173,7 +166,6 @@
         snapshot.forEach(child => {
           scoresArr.push(child.val());
         });
-        // Urutkan descending berdasarkan score
         scoresArr.sort((a, b) => b.score - a.score);
       }
       return scoresArr;
@@ -188,9 +180,13 @@
         leaderboardBody.innerHTML = "<tr><td colspan='3'>Belum ada skor.</td></tr>";
       } else {
         scores.forEach((entry, index) => {
+          let rankIcon = index + 1;
+          if (index === 0) rankIcon = "🥇";
+          else if (index === 1) rankIcon = "🥈";
+          else if (index === 2) rankIcon = "🥉";
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${index + 1}</td>
+            <td>${rankIcon}</td>
             <td>${entry.name}</td>
             <td>${entry.score}</td>
           `;
@@ -208,6 +204,21 @@
   </script>
   <style>
     .hidden { display: none; }
+    table {
+      border-collapse: collapse;
+      margin: auto;
+      font-size: 18px;
+      width: 90%;
+      max-width: 600px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    h2, h3 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -226,8 +237,8 @@
   </div>
 
   <div id="leaderboard" class="hidden">
-    <h2>Leaderboard</h2>
-    <table border="1">
+    <h2>🏆 Leaderboard Top 10</h2>
+    <table>
       <thead>
         <tr>
           <th>Peringkat</th>
