@@ -50,6 +50,11 @@
       background-color: #0056b3;
     }
 
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
     label {
       font-weight: bold;
       margin-top: 15px;
@@ -99,6 +104,12 @@
     .option-item {
       padding: 6px 10px;
     }
+
+    .loading {
+      text-align: center;
+      padding: 10px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -110,7 +121,6 @@
       
       <select id="kelas" required>
         <option value="" disabled selected>Pilih Kelas</option>
-        <option value="7">N/A</option>
         <option value="1">Kelas 1</option>
         <option value="2">Kelas 2</option>
         <option value="3">Kelas 3</option>
@@ -125,9 +135,11 @@
 
       <input type="text" id="cari-kota" placeholder="Cari kota atau kabupaten..." />
 
-      <select id="kota" required size="8"></select>
+      <select id="kota" required size="8">
+        <option value="" disabled selected>Memuat data kota...</option>
+      </select>
 
-      <button type="submit">Mulai Ujian</button>
+      <button type="submit" id="submit-btn" disabled>Mulai Ujian</button>
     </form>
 
     <div id="leaderboard">
@@ -158,21 +170,39 @@
   </div>
 
   <script>
-    // Dummy list (ganti dengan data JSON asli kalau ada)
-    const kotaData = {
-      "Jawa Tengah": ["Kab. Kudus", "Kab. Semarang", "Kab. Banyumas"],
-      "Jawa Barat": ["Kab. Bandung", "Kab. Bogor"],
-      "DKI Jakarta": ["Jakarta Selatan", "Jakarta Barat"]
-    };
-
     const kotaSelect = document.getElementById('kota');
     const cariKota = document.getElementById('cari-kota');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    let kotaData = {}; // Ini akan diisi dengan data dari JSON
 
-    let allKotaOptions = [];
+    // Fungsi untuk memuat data kota dari file JSON
+    async function loadKotaData() {
+      try {
+        const response = await fetch('kota-provinsi.json');
+        
+        if (!response.ok) {
+          throw new Error('Gagal memuat data kota');
+        }
+        
+        kotaData = await response.json();
+        populateKotaOptions();
+        submitBtn.disabled = false;
+      } catch (error) {
+        console.error('Error:', error);
+        kotaSelect.innerHTML = '<option value="" disabled selected>Gagal memuat data kota</option>';
+      }
+    }
 
     function populateKotaOptions(filter = '') {
       kotaSelect.innerHTML = '';
-      allKotaOptions = [];
+      
+      if (Object.keys(kotaData).length === 0) {
+        kotaSelect.innerHTML = '<option value="" disabled selected>Data kota belum dimuat</option>';
+        return;
+      }
+
+      let hasResults = false;
 
       for (const provinsi in kotaData) {
         const kotaList = kotaData[provinsi].filter(kota =>
@@ -180,6 +210,7 @@
         );
 
         if (kotaList.length > 0) {
+          hasResults = true;
           const provLabel = document.createElement('option');
           provLabel.textContent = `🔷 ${provinsi}`;
           provLabel.disabled = true;
@@ -192,9 +223,12 @@
             opt.textContent = kota;
             opt.className = 'option-item';
             kotaSelect.appendChild(opt);
-            allKotaOptions.push(opt);
           });
         }
+      }
+
+      if (!hasResults) {
+        kotaSelect.innerHTML = '<option value="" disabled selected>Tidak ditemukan hasil</option>';
       }
     }
 
@@ -203,12 +237,8 @@
       populateKotaOptions(searchTerm);
     });
 
-    // Populate pertama kali
-    populateKotaOptions();
-
-
-
-     
+    // Memuat data saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', loadKotaData);
   </script>
 </body>
 </html>
