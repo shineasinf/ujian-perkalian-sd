@@ -74,18 +74,18 @@
       const name = document.getElementById("nameInput").value.trim();
       const studentClass = document.getElementById("classInput").value.trim();
       const birthDate = document.getElementById("birthInput").value;
-      const city = document.getElementById("cityInput").value.trim();
+      const school = document.getElementById("schoolInput").value.trim();
 
       if (name.length < 6) {
         alert("Nama harus minimal 6 huruf.");
         return;
       }
-      if (!studentClass || !birthDate || !city) {
+      if (!studentClass || !birthDate || !school) {
         alert("Mohon lengkapi semua data siswa.");
         return;
       }
 
-      studentMeta = { name, class: studentClass, birthdate: birthDate, city };
+      studentMeta = { name, class: studentClass, birthdate: birthDate, school };
 
       document.getElementById("intro").classList.add("hidden");
       document.getElementById("leaderboard").classList.add("hidden");
@@ -158,7 +158,7 @@
         name: studentMeta.name,
         class: studentMeta.class,
         birthdate: studentMeta.birthdate,
-        city: studentMeta.city,
+        school: studentMeta.school,
         score: score,
         timestamp: Date.now()
       }).then(() => {
@@ -224,7 +224,7 @@
             <td>${rankIcon}</td>
             <td>${entry.name}</td>
             <td>${entry.score}</td>
-            <td>${entry.city}</td>
+            <td>${entry.school}</td>
             <td>${age}</td>
           `;
           leaderboardBody.appendChild(row);
@@ -292,7 +292,7 @@
       <option value="6">6</option>
     </select>
     <input type="text" id="birthInput" placeholder="Tanggal Lahir (dd/mm/yyyy)" onfocus="(this.type='date')" onblur="if(this.value==''){this.type='text'}">
-    <input id="cityInput" placeholder="Nama sekolah" />
+    <input id="schoolInput" placeholder="Nama sekolah" />
     <button onclick="startExam()">Mulai Ujian</button>
   </div>
 
