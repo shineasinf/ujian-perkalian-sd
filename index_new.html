@@ -91,9 +91,11 @@
       for (let i = start; i < end && i < questions.length; i++) {
         const q = questions[i];
         const div = document.createElement("div");
+        div.style.textAlign = "center";
+        div.style.fontSize = "18px";
         div.innerHTML = `
           <label><b>Soal ${i + 1}:</b> ${q.a} x ${q.b}</label><br>
-          <input type="number" data-index="${i}" value="${answers[i] || ""}" /><br><br>
+          <input type="number" data-index="${i}" value="${answers[i] || ""}" style="font-size: 18px; padding: 8px; width: 100px;" /><br><br>
         `;
         container.appendChild(div);
       }
@@ -124,6 +126,7 @@
     }
 
     function finishExam() {
+      if (!confirm("Apakah Anda yakin akan mengumpulkan jawaban?")) return;
       clearInterval(timer);
       saveAnswers();
       let score = 0;
@@ -216,15 +219,44 @@
       padding: 8px;
       text-align: center;
     }
-    h2, h3 {
+    h2 {
       text-align: center;
+      text-transform: uppercase;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    #intro {
+      text-align: center;
+    }
+    #nameInput {
+      font-size: 18px;
+      padding: 10px;
+      width: 250px;
+      margin-bottom: 10px;
+    }
+    #intro button {
+      font-size: 18px;
+      padding: 10px 20px;
+      margin-top: 10px;
+    }
+    #exam {
+      text-align: center;
+    }
+    #exam button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+    #exam button:last-child {
+      background-color: red;
+      color: white;
     }
   </style>
 </head>
 <body>
   <div id="intro">
     <h2>Ujian Perkalian SD</h2>
-    <input id="nameInput" placeholder="Masukkan nama siswa" />
+    <input id="nameInput" placeholder="Masukkan nama siswa" /><br>
     <button onclick="startExam()">Mulai Ujian</button>
   </div>
 
